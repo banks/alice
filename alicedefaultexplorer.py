@@ -224,7 +224,7 @@ def default_checks(alice_args, threads = 1):
 					MultiThreadedChecker.check_later(dirname, (mode, i, j))
 					atomicity_explanations[(mode, i, j)] = replayer.get_op(i).hidden_disk_ops[j].atomicity
 
-				if mode != ('aligned', '4096'): # Do not do this for the 4096 aligned case, since a large write might contain a huge number of diskops
+				if mode != ('aligned', 4096): # Do not do this for the 4096 aligned case, since a large write might contain a huge number of diskops
 					for k in range(0, j):
 						replayer.dops_omit((i, k))
 						if replayer.is_legal():
