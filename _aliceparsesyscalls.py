@@ -79,6 +79,8 @@ innocent_syscalls = ["_exit","pread","_newselect","_sysctl","accept","accept4","
 
 innocent_syscalls += ['mtrace_mmap', 'mtrace_munmap', 'mtrace_thread_start']
 
+innocent_syscalls += ['syscall_318']
+
 # Some system calls have special 64-bit versions. The 64-bit versions
 # are not inherently different from the original versions, and strace
 # automatically converts their representation to look like the original.
@@ -557,7 +559,10 @@ def __get_micro_op(syscall_tid, line, stackinfo, mtrace_recorded):
 				os.link(replayed_path(source), replayed_path(dest))
 			else:
 				assert not is_interesting(dest)
-	elif parsed_line.syscall == 'rename':
+	elif parsed_line.syscall == 'rename' or \
+		(parsed_line.syscall == 'renameat' and parsed_line.args[0] == "AT_FDCWD" and parsed_line.args[2] == "AT_FDCWD"):
+		if parsed_line.syscall == 'renameat':
+			parsed_line.args = [parsed_line.args[1], parsed_line.args[3]]
 		if int(parsed_line.ret) != -1:
 			source = proctracker.original_path(eval(parsed_line.args[0]))
 			dest = proctracker.original_path(eval(parsed_line.args[1]))
@@ -580,7 +585,10 @@ def __get_micro_op(syscall_tid, line, stackinfo, mtrace_recorded):
 					assert memtracker.file_mapped(dest_inode) == False
 					os.rename(replayed_path(dest), replayed_path(dest) + '.deleted_' + str(uuid.uuid1()))
 				os.rename(replayed_path(source), replayed_path(dest))
-	elif parsed_line.syscall == 'unlink':
+	elif parsed_line.syscall == 'unlink' or \
+		(parsed_line.syscall == 'unlinkat' and parsed_line.args[0] == 'AT_FDCWD'):
+		if parsed_line.syscall == 'unlinkat':
+			parsed_line.args.pop(0)
 		if int(parsed_line.ret) != -1:
 			name = proctracker.original_path(eval(parsed_line.args[0]))
 			if is_interesting(name):
@@ -714,7 +722,7 @@ def __get_micro_op(syscall_tid, line, stackinfo, mtrace_recorded):
 	elif parsed_line.syscall in ['fcntl', 'fcntl64']:
 		fd = safe_string_to_int(parsed_line.args[0])
 		cmd = parsed_line.args[1]
-		assert cmd in ['F_GETFD', 'F_SETFD', 'F_GETFL', 'F_SETFL', 'F_SETLK', 'F_SETLKW', 'F_GETLK', 'F_SETLK64', 'F_SETLKW64', 'F_GETLK64', 'F_DUPFD']
+		assert cmd in ['F_GETFD', 'F_SETFD', 'F_GETFL', 'F_SETFL', 'F_SETLK', 'F_SETLKW', 'F_GETLK', 'F_SETLK64', 'F_SETLKW64', 'F_GETLK64', 'F_DUPFD', '0x24 /* F_??? */']
 
 		tracker = None
 		if fdtracker.is_watched(fd):
