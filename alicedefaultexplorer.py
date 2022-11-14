@@ -34,6 +34,8 @@ import gc
 from alice import aliceconfig
 from alice import Replayer
 from alicedefaultfs import defaultfs
+from distutils.file_util import copy_file
+from distutils.dir_util import copy_tree
 
 __author__ = "Thanumalayan Sankaranarayana Pillai"
 __copyright__ = "Copyright 2014, Thanumalayan Sankaranarayana Pillai"
@@ -45,18 +47,27 @@ class MultiThreadedChecker(threading.Thread):
 	queue = Queue.Queue()
 	outputs = {}
 	
-	def __init__(self, queue, thread_id='0'):
+	def __init__(self, queue):
 		threading.Thread.__init__(self)
 		self.queue = MultiThreadedChecker.queue
-		self.thread_id = str(thread_id)
 
 	def __threaded_check(self, dirname, crashid):
 		assert type(aliceconfig().checker_tool) in [list, str, tuple]
-		args = [aliceconfig().checker_tool, dirname, dirname + '.input_stdout', self.thread_id]
+		args = [aliceconfig().checker_tool, dirname, dirname + '.input_stdout']
 		output_stdout = dirname + '.output_stdout'
 		output_stderr = dirname + '.output_stderr'
 		retcode = subprocess.call(args, stdout = open(output_stdout, 'w'), stderr = open(output_stderr, 'w'))
+		# print "STDERR: %s" % open(output_stderr, "r").readline()
 		MultiThreadedChecker.outputs[crashid] = retcode
+		if retcode != 0:
+			# Keep dirs that fail check for debugging!
+			trace_dir = os.path.dirname(aliceconfig().strace_file_prefix)
+			out_dir = os.path.join(trace_dir, os.path.basename(dirname))
+			copy_tree(dirname, out_dir)
+			# Also copy the inputs used which are siblings
+			copy_file(output_stdout, out_dir)
+			copy_file(output_stderr, out_dir)
+			copy_file(dirname + '.input_stdout', out_dir)
 		os.system('rm -rf ' + dirname)
 
 	def run(self):
@@ -117,7 +128,7 @@ def default_checks(alice_args, threads = 1):
 
 	assert threads > 0
 	for i in range(0, threads):
-		t = MultiThreadedChecker(MultiThreadedChecker.queue, i)
+		t = MultiThreadedChecker(MultiThreadedChecker.queue)
 		t.setDaemon(True)
 		t.start()
 
