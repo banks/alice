@@ -648,10 +648,12 @@ def __get_micro_op(syscall_tid, line, stackinfo, mtrace_recorded):
 		if int(parsed_line.ret) != -1:
 			fd = safe_string_to_int(parsed_line.args[0])
 			if fdtracker.is_watched(fd):
+				name = fdtracker.get_name(fd)
 				mode = parsed_line.args[1]
 				assert mode == '0'
 				offset = safe_string_to_int(parsed_line.args[2])
 				count = safe_string_to_int(parsed_line.args[3])
+                                size = count
 				inode = fdtracker.get_inode(fd)
 				init_size = __replayed_stat(name).st_size
 				if offset + size > init_size:
@@ -659,7 +661,7 @@ def __get_micro_op(syscall_tid, line, stackinfo, mtrace_recorded):
 					micro_operations.append(new_op)
 					__replayed_truncate(name, offset + count)
 				data = ''.join('0' for x in range(count))
-				new_op = Struct(op = 'write', name = name, inode = inode, offset = offset, count = count, dump_file = '', dump_offset = 0, override_data = data)
+				new_op = Struct(op = 'write', name = name, inode = inode, offset = offset, count = count, dump_file = name, dump_offset = 0, override_data = data)
 				assert new_op.count > 0
 				micro_operations.append(new_op)
 	elif parsed_line.syscall in ['fsync', 'fdatasync']:

@@ -76,4 +76,3 @@ for folder in folders:
 
 alicedefaultexplorer.default_checks(alice_config, threads = args.threads)
 os.system("rm -rf " + alice_config['scratchpad_dir'])
-

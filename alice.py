@@ -148,7 +148,6 @@ def replay_disk_ops(initial_paths_inode_map, rows, replay_dir, stdout_file, use_
 
 	output_stdout = open(stdout_file, 'w')
 	for line in rows:
-	#	print line
 		if line.op == 'create_dir_entry':
 			new_path = get_inode_directory(line.parent) + '/' + os.path.basename(line.entry)
 			if line.entry_type == Struct.TYPE_FILE:
@@ -341,7 +340,8 @@ class Replayer:
 			for j in range(0, till):
 				if not micro_op.hidden_disk_ops[j].hidden_omitted:
 					to_replay.append(micro_op.hidden_disk_ops[j])
-                replay_disk_ops(self.path_inode_map, to_replay, dirname, stdout_file, use_cached = False)
+					replay_disk_ops(self.path_inode_map, to_replay, dirname, stdout_file, use_cached = False)
+
 	def get_op(self, i):
 		assert i <= len(self.micro_ops)
 		return copy.deepcopy(self.micro_ops[i])
