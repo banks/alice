@@ -18,6 +18,25 @@ by-product of a research project
 ([http://research.cs.wisc.edu/adsl/Publications/alice-osdi14.html](http://research.cs.wisc.edu/adsl/Publications/alice-osdi14.html))
 in the University of Wisconsin-Madison.
 
+## Changes in this fork
+Some changes based on changes in dgraph-io/alice
+
+  * Added several new syscalls to the "ignored" list
+  * Added support for an `fcntl` op `0x24` ([`F_OFD_GETLK`](https://github.com/sabotage-linux/kernel-headers/blob/67221a865a5196bca7de7b2c23f6671b6b8633bb/generic/include/asm-generic/fcntl.h#LL148-L148C23)) used on to get an exclusive lock by BoltDB. `alice-strace` still doesn't know what it is as it's not important but `alice-check` doesn't choke on it!
+  * Added support for `renameat`/`unlinkat` syscalls (based on Dgraph's fork)
+  * Prevented `alice-check` from crashing if the strace files contained a final
+    line that was truncated (not sure why this happened on my machine but it was
+    always this way).
+  * Fixed a bug where `alice-check` is supposed to skip trying every permutation
+    of micro ops when doing `('aligned', 4096)` split check (per comments) as
+    it's slow, but actually was anyway because the condition compared string
+    instead of int size in the tuple: `if mode == ('aligned', '4096')`!
+  * Modified `MultiThreadedChecker` so that it will copy both the reconstructed
+    disk state and the input and output files of the checker into the traces dir
+    on a failure so that we can debug. Without this it's extremely hard to
+    interpret the results! This allows the debugging workflow outlined below.
+  * Dockerfile and publish to ghcr.io
+
 ## Chapter 1: Installation
 
 ALICE was tested to work on Ubuntu-12.02, and should be expected to work
