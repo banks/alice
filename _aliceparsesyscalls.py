@@ -100,6 +100,11 @@ def parse_line(line):
 		# Split the line, the format being 'HH:MM:SS.nnnnn syscall(args...) = RETVALUE ERRORCODE (Error String)'
 		m = re.search(r'^([0-9:\.]+) ([^(]+)(\(.*\)) += ([xa-f\-0-9]+|\?) ?(E[^ ]* \([^\(\)]*\)|\([^\(\)]*\))?$', line)
 
+		# Sometimes last line in trace file is truncated so doesn't match. Just
+		# ignore that case.
+		if m == None:
+			return False
+
 		# Convert time into a numerical value
 		time = line[m.start(1) : m.end(1)]
 		toret.str_time = time
